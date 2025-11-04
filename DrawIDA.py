@@ -1,6 +1,24 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
 import ida_kernwin
 import idaapi
+
+if idaapi.IDA_SDK_VERSION >= 920:
+    from PySide6 import QtWidgets, QtGui, QtCore
+    from PySide6.QtGui import QGuiApplication
+    IS_PYSIDE6 = True
+else:
+    from PyQt5 import QtWidgets, QtGui, QtCore
+    IS_PYSIDE6 = False
+
+try:
+    QAction = QtWidgets.QAction
+except AttributeError:
+    QAction = QtGui.QAction
+
+def dialog_exec(dialog):
+    if IS_PYSIDE6:
+        return dialog.exec() # exec(), for IDA >= 9.2
+    else:
+        return dialog.exec_() # exec_(), for IDA < 9.2
 
 class TextItem:
     def __init__(self, text, pos, color, font_size=14):
@@ -65,7 +83,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
     def mousePressEvent(self, event):
         if event.button() != QtCore.Qt.LeftButton:
             return
-        
+
         self.cursor_pos = event.pos()
 
         if self.mode == "text" and self.pending_text:
@@ -83,7 +101,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                     self.drag_offset = event.pos()
                     hit = True
                     break
-            
+
             if not hit:
                 for stroke in self.selected_strokes:
                     if self.point_near_stroke(event.pos(), stroke):
@@ -91,7 +109,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                         self.drag_offset = event.pos()
                         hit = True
                         break
-            
+
             if not hit:
                 self.selecting = True
                 self.selection_rect.setTopLeft(event.pos())
@@ -114,7 +132,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
 
     def mouseMoveEvent(self, event):
         self.cursor_pos = event.pos()
-        
+
         if self.mode == "select":
             if self.dragging_selection:
                 delta = event.pos() - self.drag_offset
@@ -125,26 +143,26 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                 self.drag_offset = event.pos()
             elif self.selecting:
                 self.selection_rect.setBottomRight(event.pos())
-                
+
         elif self.mode == "draw" and self.drawing and self.current_stroke:
             if not self.last_point or (event.pos() - self.last_point).manhattanLength() > 1:
                 self.current_stroke.points.append(event.pos())
                 self.last_point = event.pos()
-                
+
         elif self.mode == "erase" and self.drawing:
             self.erase_at(event.pos())
-            
+
         self.update()
 
     def mouseReleaseEvent(self, event):
         self.cursor_pos = event.pos()
-        
+
         if self.mode == "select":
             if self.selecting:
                 self.selecting = False
                 self.selected_strokes.clear()
                 self.selected_texts.clear()
-                
+
                 normalized_rect = self.selection_rect.normalized()
                 for stroke in self.strokes:
                     for pt in stroke.points:
@@ -152,18 +170,18 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                             if stroke not in self.selected_strokes:
                                 self.selected_strokes.append(stroke)
                             break
-                
+
                 for text in self.text_items:
                     if normalized_rect.intersects(self.text_rect(text)):
                         self.selected_texts.append(text)
-                        
+
                 self.selection_rect = QtCore.QRect()
             self.dragging_selection = False
-            
+
         elif self.mode in ["draw", "erase"]:
             self.drawing = False
             self.current_stroke = None
-            
+
         self.update()
 
     def keyPressEvent(self, event):
@@ -178,11 +196,11 @@ class WhiteboardCanvas(QtWidgets.QWidget):
 
     def erase_at(self, pos):
         radius = self.pen_size + 3
-        
+
         for stroke in self.strokes[:]:
             if self.point_near_stroke(pos, stroke, radius):
                 self.strokes.remove(stroke)
-        
+
         for text in self.text_items[:]:
             if self.text_rect(text).contains(pos):
                 self.text_items.remove(text)
@@ -190,17 +208,17 @@ class WhiteboardCanvas(QtWidgets.QWidget):
     def delete_selection(self):
         if not self.selected_strokes and not self.selected_texts:
             return
-            
+
         self.push_undo()
-        
+
         for stroke in self.selected_strokes:
             if stroke in self.strokes:
                 self.strokes.remove(stroke)
-        
+
         for text in self.selected_texts:
             if text in self.text_items:
                 self.text_items.remove(text)
-        
+
         self.selected_strokes.clear()
         self.selected_texts.clear()
         self.update()
@@ -208,9 +226,9 @@ class WhiteboardCanvas(QtWidgets.QWidget):
     def get_selection_bounds(self):
         if not self.selected_strokes and not self.selected_texts:
             return None
-            
+
         min_x = min_y = max_x = max_y = None
-        
+
         for stroke in self.selected_strokes:
             for pt in stroke.points:
                 x, y = pt.x(), pt.y()
@@ -222,7 +240,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                     min_y = min(min_y, y)
                     max_x = max(max_x, x)
                     max_y = max(max_y, y)
-        
+
         for text in self.selected_texts:
             rect = self.text_rect(text)
             x1, y1 = rect.topLeft().x(), rect.topLeft().y()
@@ -234,7 +252,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                 min_y = min(min_y, y1)
                 max_x = max(max_x, x2)
                 max_y = max(max_y, y2)
-        
+
         if min_x is not None:
             return QtCore.QRect(QtCore.QPoint(min_x, min_y), QtCore.QPoint(max_x, max_y))
         return None
@@ -296,7 +314,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
             current_strokes = [Stroke(list(s.points), s.color, s.width) for s in self.strokes]
             current_texts = [TextItem(t.text, QtCore.QPoint(t.pos), t.color, t.font_size) for t in self.text_items]
             self.redo_stack.append((current_strokes, current_texts))
-            
+
             self.strokes, self.text_items = self.undo_stack.pop()
             self.selected_strokes.clear()
             self.selected_texts.clear()
@@ -307,7 +325,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
             current_strokes = [Stroke(list(s.points), s.color, s.width) for s in self.strokes]
             current_texts = [TextItem(t.text, QtCore.QPoint(t.pos), t.color, t.font_size) for t in self.text_items]
             self.undo_stack.append((current_strokes, current_texts))
-            
+
             self.strokes, self.text_items = self.redo_stack.pop()
             self.selected_strokes.clear()
             self.selected_texts.clear()
@@ -355,46 +373,47 @@ class drawidaPlugin(ida_kernwin.PluginForm):
     def OnCreate(self, form):
         self.widget = self.FormToPyQtWidget(form)
         self.canvas = WhiteboardCanvas()
-        
+
         layout = QtWidgets.QVBoxLayout()
         toolbar = QtWidgets.QToolBar()
         toolbar.setIconSize(QtCore.QSize(24, 24))
 
-        draw_action = QtWidgets.QAction("Draw", self.widget)
+        # use the compatibility QAction
+        draw_action = QAction("Draw", self.widget)
         draw_action.triggered.connect(self.canvas.set_draw_mode)
         toolbar.addAction(draw_action)
 
-        text_action = QtWidgets.QAction("Text", self.widget)
+        text_action = QAction("Text", self.widget)
         text_action.triggered.connect(self.add_text)
         toolbar.addAction(text_action)
 
-        select_action = QtWidgets.QAction("Select", self.widget)
+        select_action = QAction("Select", self.widget)
         select_action.triggered.connect(self.canvas.set_select_mode)
         toolbar.addAction(select_action)
 
-        erase_action = QtWidgets.QAction("Eraser", self.widget)
+        erase_action = QAction("Eraser", self.widget)
         erase_action.triggered.connect(self.canvas.set_erase_mode)
         toolbar.addAction(erase_action)
 
         toolbar.addSeparator()
 
-        size_color_action = QtWidgets.QAction("Style", self.widget)
+        size_color_action = QAction("Style", self.widget)
         size_color_action.triggered.connect(self.choose_sizes_dialog)
         toolbar.addAction(size_color_action)
 
         toolbar.addSeparator()
 
-        undo_action = QtWidgets.QAction("Undo", self.widget)
+        undo_action = QAction("Undo", self.widget)
         undo_action.triggered.connect(self.canvas.undo)
         toolbar.addAction(undo_action)
 
-        redo_action = QtWidgets.QAction("Redo", self.widget)
+        redo_action = QAction("Redo", self.widget)
         redo_action.triggered.connect(self.canvas.redo)
         toolbar.addAction(redo_action)
 
         toolbar.addSeparator()
 
-        clear_action = QtWidgets.QAction("Clear", self.widget)
+        clear_action = QAction("Clear", self.widget)
         clear_action.triggered.connect(self.on_clear)
         toolbar.addAction(clear_action)
 
@@ -425,6 +444,7 @@ class drawidaPlugin(ida_kernwin.PluginForm):
         selected_color = [self.canvas.pen_color]
 
         def pick_color():
+            # QColorDialog signature differs slightly; the getColor call below is tolerant
             color = QtWidgets.QColorDialog.getColor(self.canvas.pen_color, dialog)
             if color.isValid():
                 selected_color[0] = color
@@ -445,13 +465,13 @@ class drawidaPlugin(ida_kernwin.PluginForm):
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
 
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        if dialog_exec(dialog) == QtWidgets.QDialog.Accepted:
             self.canvas.pen_size = pen_input.value()
-            
+
             if self.canvas.selected_texts:
                 for text in self.canvas.selected_texts:
                     text.font_size = text_input.value()
-            
+
             self.canvas.text_font_size = text_input.value()
             self.canvas.pen_color = selected_color[0]
             self.canvas.update()
@@ -459,7 +479,7 @@ class drawidaPlugin(ida_kernwin.PluginForm):
     def on_clear(self):
         if not self.canvas.strokes and not self.canvas.text_items:
             return
-        
+
         self.canvas.clear()
 
     def OnClose(self, form):
