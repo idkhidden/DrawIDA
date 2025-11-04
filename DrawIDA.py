@@ -487,7 +487,7 @@ class drawida_plugin_t(idaapi.plugin_t):
 
     def init(self):
         self.mod = drawida_plugmod_t()
-        ida_kernwin.msg("[DrawIDA] plugin loaded. Press Ctrl-Shift-T to open.\n")
+        ida_kernwin.msg("[DrawIDA] plugin loaded.\n")
         return idaapi.PLUGIN_OK
 
     def run(self, arg):
