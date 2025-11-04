@@ -1,0 +1,13 @@
+
+{
+  "IDAMetadataDescriptorVersion": 1,
+  "plugin": {
+    "name": "DrawIDA",
+    "entryPoint": "DrawIDA.py",
+    "categories": ["ui-ux-and-visualization", "collaboration-and-productivity"],
+    "logoPath": "logo.png",
+    "idaVersions": ">=7.4",
+    "description": "Lightweight whiteboard plugin for IDA Pro that allows reverse engineers to sketch and brainstorm directly inside IDA",
+    "version": "1.0.0"
+  }
+}
