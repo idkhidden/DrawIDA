@@ -5,7 +5,7 @@
     "name": "DrawIDA",
     "entryPoint": "DrawIDA.py",
     "categories": ["ui-ux-and-visualization", "collaboration-and-productivity"],
-    "logoPath": "https://github.com/user-attachments/assets/3b50e72c-9b06-487c-816d-90053f0dd63d",
+    "logoPath": "logo.png",
     "idaVersions": ">=7.4",
     "description": "Lightweight whiteboard plugin for IDA Pro that allows reverse engineers to sketch and brainstorm directly inside IDA",
     "version": "1.0.0"
