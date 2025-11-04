@@ -1,5 +1,5 @@
 <img width="500" height="500" alt="logo" src="https://github.com/user-attachments/assets/3b50e72c-9b06-487c-816d-90053f0dd63d"/> <br>
-Lightweight whiteboard plugin for IDA Pro that allows reverse engineers to sketch and brainstorm directly inside IDA.
+Lightweight whiteboard plugin for IDA that allows reverse engineers to sketch and brainstorm directly inside IDA.
 
 ## Features
 - Text
