@@ -14,8 +14,8 @@ Lightweight whiteboard plugin for IDA that allows reverse engineers to sketch an
 <img width="1536" height="677" alt="image" src="https://github.com/user-attachments/assets/40a445d4-b039-46cb-97c8-9f8672e450f7" />
 
 ## Requirements
-PyQt5 must be installed before using DrawIDA.<br>
-`pip install PyQt5`
+PyQt5/PySide6 must be installed before using DrawIDA.<br>
+`pip install PyQt5/PySide6`
 
 ## Installation
 Copy `DrawIDA.py` to your IDA plugins folder and restart IDA.
