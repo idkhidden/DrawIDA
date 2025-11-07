@@ -14,11 +14,13 @@ try:
 except AttributeError:
     QAction = QtGui.QAction
 
+
 def dialog_exec(dialog):
     if IS_PYSIDE6:
-        return dialog.exec() # exec(), for IDA >= 9.2
+        return dialog.exec()
     else:
-        return dialog.exec_() # exec_(), for IDA < 9.2
+        return dialog.exec_()
+
 
 class TextItem:
     def __init__(self, text, pos, color, font_size=14):
@@ -27,11 +29,13 @@ class TextItem:
         self.color = QtGui.QColor(color)
         self.font_size = font_size
 
+
 class Stroke:
     def __init__(self, points, color, width):
         self.points = [QtCore.QPoint(pt) for pt in points]
         self.color = QtGui.QColor(color)
         self.width = width
+
 
 class WhiteboardCanvas(QtWidgets.QWidget):
     def __init__(self):
@@ -39,6 +43,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
         self.pen_color = QtGui.QColor("black")
         self.pen_size = 2
         self.text_font_size = 14
+        self.background_color = QtGui.QColor("white")  
         self.strokes = []
         self.text_items = []
         self.undo_stack = []
@@ -196,11 +201,9 @@ class WhiteboardCanvas(QtWidgets.QWidget):
 
     def erase_at(self, pos):
         radius = self.pen_size + 3
-
         for stroke in self.strokes[:]:
             if self.point_near_stroke(pos, stroke, radius):
                 self.strokes.remove(stroke)
-
         for text in self.text_items[:]:
             if self.text_rect(text).contains(pos):
                 self.text_items.remove(text)
@@ -208,17 +211,13 @@ class WhiteboardCanvas(QtWidgets.QWidget):
     def delete_selection(self):
         if not self.selected_strokes and not self.selected_texts:
             return
-
         self.push_undo()
-
         for stroke in self.selected_strokes:
             if stroke in self.strokes:
                 self.strokes.remove(stroke)
-
         for text in self.selected_texts:
             if text in self.text_items:
                 self.text_items.remove(text)
-
         self.selected_strokes.clear()
         self.selected_texts.clear()
         self.update()
@@ -226,9 +225,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
     def get_selection_bounds(self):
         if not self.selected_strokes and not self.selected_texts:
             return None
-
         min_x = min_y = max_x = max_y = None
-
         for stroke in self.selected_strokes:
             for pt in stroke.points:
                 x, y = pt.x(), pt.y()
@@ -240,7 +237,6 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                     min_y = min(min_y, y)
                     max_x = max(max_x, x)
                     max_y = max(max_y, y)
-
         for text in self.selected_texts:
             rect = self.text_rect(text)
             x1, y1 = rect.topLeft().x(), rect.topLeft().y()
@@ -252,7 +248,6 @@ class WhiteboardCanvas(QtWidgets.QWidget):
                 min_y = min(min_y, y1)
                 max_x = max(max_x, x2)
                 max_y = max(max_y, y2)
-
         if min_x is not None:
             return QtCore.QRect(QtCore.QPoint(min_x, min_y), QtCore.QPoint(max_x, max_y))
         return None
@@ -260,15 +255,15 @@ class WhiteboardCanvas(QtWidgets.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.fillRect(self.rect(), QtGui.QColor("white"))
+        painter.fillRect(self.rect(), self.background_color) 
 
         for stroke in self.strokes:
             pen = QtGui.QPen(stroke.color, stroke.width, QtCore.Qt.SolidLine,
-                           QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin)
+                             QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin)
             painter.setPen(pen)
             if len(stroke.points) > 1:
                 for i in range(1, len(stroke.points)):
-                    painter.drawLine(stroke.points[i-1], stroke.points[i])
+                    painter.drawLine(stroke.points[i - 1], stroke.points[i])
             elif len(stroke.points) == 1:
                 painter.drawPoint(stroke.points[0])
 
@@ -314,7 +309,6 @@ class WhiteboardCanvas(QtWidgets.QWidget):
             current_strokes = [Stroke(list(s.points), s.color, s.width) for s in self.strokes]
             current_texts = [TextItem(t.text, QtCore.QPoint(t.pos), t.color, t.font_size) for t in self.text_items]
             self.redo_stack.append((current_strokes, current_texts))
-
             self.strokes, self.text_items = self.undo_stack.pop()
             self.selected_strokes.clear()
             self.selected_texts.clear()
@@ -325,7 +319,6 @@ class WhiteboardCanvas(QtWidgets.QWidget):
             current_strokes = [Stroke(list(s.points), s.color, s.width) for s in self.strokes]
             current_texts = [TextItem(t.text, QtCore.QPoint(t.pos), t.color, t.font_size) for t in self.text_items]
             self.undo_stack.append((current_strokes, current_texts))
-
             self.strokes, self.text_items = self.redo_stack.pop()
             self.selected_strokes.clear()
             self.selected_texts.clear()
@@ -364,6 +357,7 @@ class WhiteboardCanvas(QtWidgets.QWidget):
     def set_pen_color(self, color):
         self.pen_color = QtGui.QColor(color)
 
+
 class drawidaPlugin(ida_kernwin.PluginForm):
     def __init__(self, plugin_ref):
         super().__init__()
@@ -378,7 +372,6 @@ class drawidaPlugin(ida_kernwin.PluginForm):
         toolbar = QtWidgets.QToolBar()
         toolbar.setIconSize(QtCore.QSize(24, 24))
 
-        # use the compatibility QAction
         draw_action = QAction("Draw", self.widget)
         draw_action.triggered.connect(self.canvas.set_draw_mode)
         toolbar.addAction(draw_action)
@@ -398,7 +391,7 @@ class drawidaPlugin(ida_kernwin.PluginForm):
         toolbar.addSeparator()
 
         size_color_action = QAction("Style", self.widget)
-        size_color_action.triggered.connect(self.choose_sizes_dialog)
+        size_color_action.triggered.connect(self.choose_style_dialog)
         toolbar.addAction(size_color_action)
 
         toolbar.addSeparator()
@@ -427,7 +420,7 @@ class drawidaPlugin(ida_kernwin.PluginForm):
         if ok and text:
             self.canvas.set_text_mode(text)
 
-    def choose_sizes_dialog(self):
+    def choose_style_dialog(self):
         dialog = QtWidgets.QDialog(self.widget)
         dialog.setWindowTitle("Configure Style")
         layout = QtWidgets.QFormLayout(dialog)
@@ -440,11 +433,10 @@ class drawidaPlugin(ida_kernwin.PluginForm):
         text_input.setRange(6, 72)
         text_input.setValue(self.canvas.text_font_size)
 
-        color_button = QtWidgets.QPushButton("Choose Color")
+        color_button = QtWidgets.QPushButton("Choose Pen Color")
         selected_color = [self.canvas.pen_color]
 
         def pick_color():
-            # QColorDialog signature differs slightly; the getColor call below is tolerant
             color = QtWidgets.QColorDialog.getColor(self.canvas.pen_color, dialog)
             if color.isValid():
                 selected_color[0] = color
@@ -453,38 +445,46 @@ class drawidaPlugin(ida_kernwin.PluginForm):
         color_button.clicked.connect(pick_color)
         color_button.setStyleSheet(f"background-color: {self.canvas.pen_color.name()}; color: white;")
 
+        bg_color_button = QtWidgets.QPushButton("Choose Background Color")
+        selected_bg_color = [self.canvas.background_color]
+
+        def pick_bg_color():
+            color = QtWidgets.QColorDialog.getColor(self.canvas.background_color, dialog)
+            if color.isValid():
+                selected_bg_color[0] = color
+                bg_color_button.setStyleSheet(f"background-color: {color.name()}; color: white;")
+
+        bg_color_button.clicked.connect(pick_bg_color)
+        bg_color_button.setStyleSheet(f"background-color: {self.canvas.background_color.name()}; color: white;")
+
         layout.addRow("Pen/Eraser Size:", pen_input)
         layout.addRow("Text Size:", text_input)
-        layout.addRow("Color:", color_button)
+        layout.addRow("Pen Color:", color_button)
+        layout.addRow("Background Color:", bg_color_button)
 
         buttons = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
         )
         layout.addWidget(buttons)
-
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
 
         if dialog_exec(dialog) == QtWidgets.QDialog.Accepted:
             self.canvas.pen_size = pen_input.value()
-
-            if self.canvas.selected_texts:
-                for text in self.canvas.selected_texts:
-                    text.font_size = text_input.value()
-
             self.canvas.text_font_size = text_input.value()
             self.canvas.pen_color = selected_color[0]
+            self.canvas.background_color = selected_bg_color[0]
             self.canvas.update()
 
     def on_clear(self):
         if not self.canvas.strokes and not self.canvas.text_items:
             return
-
         self.canvas.clear()
 
     def OnClose(self, form):
         self.plugin_ref.form_instance = None
         self.canvas = None
+
 
 class drawida_plugmod_t:
     def __init__(self):
@@ -497,6 +497,7 @@ class drawida_plugmod_t:
         else:
             self.form_instance.widget.raise_()
             self.form_instance.widget.activateWindow()
+
 
 class drawida_plugin_t(idaapi.plugin_t):
     flags = idaapi.PLUGIN_KEEP
@@ -515,6 +516,7 @@ class drawida_plugin_t(idaapi.plugin_t):
 
     def term(self):
         ida_kernwin.msg("[DrawIDA] plugin terminated.\n")
+
 
 def PLUGIN_ENTRY():
     return drawida_plugin_t()
