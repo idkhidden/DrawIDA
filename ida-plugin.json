@@ -1,13 +1,28 @@
-
 {
   "IDAMetadataDescriptorVersion": 1,
   "plugin": {
     "name": "DrawIDA",
-    "entryPoint": "DrawIDA.py",
-    "categories": ["ui-ux-and-visualization", "collaboration-and-productivity"],
-    "logoPath": "logo.png",
-    "idaVersions": ">=7.4",
+    "entryPoint": "DrawIDA",
+    "version": "1.0.0",
+    "idaVersions": ["7.4", "9.2"],
     "description": "Lightweight whiteboard plugin for IDA that allows reverse engineers to sketch and brainstorm directly inside IDA.",
-    "version": "1.0.0"
+    "license": "MIT",
+    "categories": [
+      "ui-ux-and-visualization",
+      "collaboration-and-productivity"
+    ],
+    "pythonDependencies": [
+      "PyQt5",
+      "PySide6"
+    ],
+    "urls": {
+      "repository": "https://github.com/idkhidden/DrawIDA/"
+    },
+    "authors": [
+      {
+        "name": "idkhidden",
+        "email": "reversesec@proton.me"
+      }
+    ]
   }
 }
